@@ -100,8 +100,8 @@ bool GameApp::InitResource()
     HR(m_pd3dDevice->CreateBuffer(&vbd, &InitData, m_pVertexBuffer.GetAddressOf()));
 
     //输入装配阶段的顶点缓冲区设置
-    UINT stride = sizeof(VertexPosColor);	// 跨越字节数
-    UINT offset = 0;						// 起始偏移量
+    UINT stride = sizeof(VertexPosColor);//步长, 每个顶点的字节数
+    UINT offset = 0;//偏移量, 从顶点数组的开头开始
 
     m_pd3dImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);//绑定顶点缓冲区到输入装配阶段
     //设置图元类型，设置输入布局
