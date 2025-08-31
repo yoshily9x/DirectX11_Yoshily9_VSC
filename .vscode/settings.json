@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.shader": "shaderlab",
+        "xstring": "cpp"
+    }
+}

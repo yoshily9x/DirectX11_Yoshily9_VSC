@@ -56,6 +56,7 @@ D3DApp::D3DApp(HINSTANCE hInstance, const std::wstring& windowName, int initWidt
     g_pd3dApp = this;
 }
 
+//退出时候的析构，因为ComPtr会自动释放资源，所以这里不需要手动释放,用ClearState()清除状态
 D3DApp::~D3DApp()
 {
     // 恢复所有默认设定
