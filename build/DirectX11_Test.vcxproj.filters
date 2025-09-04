@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\CpuTimer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\DXTrace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\GameApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\d3dApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\d3dUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\CpuTimer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\DXTrace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\GameApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\WinMin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\d3dApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\d3dUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <FXCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\HLSL\Cube\Cube_PS.hlsl">
+      <Filter>HLSL Files</Filter>
+    </FXCompile>
+    <FXCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\HLSL\Cube\Cube_VS.hlsl">
+      <Filter>HLSL Files</Filter>
+    </FXCompile>
+    <FXCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\HLSL\Triangle\Triangle_PS.hlsl">
+      <Filter>HLSL Files</Filter>
+    </FXCompile>
+    <FXCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\HLSL\Triangle\Triangle_VS.hlsl">
+      <Filter>HLSL Files</Filter>
+    </FXCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="HLSL Files">
+      <UniqueIdentifier>{01C38B1F-53E4-3287-809B-65B23F3FEA42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{D21170C9-BC40-3747-8D35-B625289A9200}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{5D557600-D3F9-3D86-99BC-396F2BF1E83B}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

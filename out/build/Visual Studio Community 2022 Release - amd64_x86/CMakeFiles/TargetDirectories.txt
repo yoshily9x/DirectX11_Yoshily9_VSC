@@ -1,3 +1,0 @@
-Z:/Developments/DirectX11/DirectX11_Yoshily9_VSC/out/build/Visual Studio Community 2022 Release - amd64_x86/CMakeFiles/DirectX11_Test.dir
-Z:/Developments/DirectX11/DirectX11_Yoshily9_VSC/out/build/Visual Studio Community 2022 Release - amd64_x86/CMakeFiles/ALL_BUILD.dir
-Z:/Developments/DirectX11/DirectX11_Yoshily9_VSC/out/build/Visual Studio Community 2022 Release - amd64_x86/CMakeFiles/ZERO_CHECK.dir

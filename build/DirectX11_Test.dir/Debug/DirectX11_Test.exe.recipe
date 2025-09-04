@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ProjectOutputs>
+    <ProjectOutput>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\x64\Debug\ZERO_CHECK</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.exe</FullPath>
+    </ProjectOutput>
+  </ProjectOutputs>
+  <ContentFiles>
+    <ContentFile>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\HLSL\Cube\Cube_PS.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\HLSL\Cube\Cube_VS.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\HLSL\Triangle\Triangle_PS.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\HLSL\Triangle\Triangle_VS.cso</FullPath>
+    </ContentFile>
+  </ContentFiles>
+  <SatelliteDlls />
+  <NonRecipeFileRefs />
+</Project>
