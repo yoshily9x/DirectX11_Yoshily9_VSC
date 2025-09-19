@@ -8,6 +8,11 @@
 #include <DirectXMath.h>
 #include "CpuTimer.h"
 
+//IMGUI
+#include <imgui.h>
+#include <imgui_impl_dx11.h>
+#include <imgui_impl_win32.h>
+
 //Direct3D 应用程序框架类
 class D3DApp
 {
@@ -28,9 +33,13 @@ public:
     virtual void DrawScene() = 0;               // 子类需要实现该方法，完成每一帧的绘制
     virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);    // 窗口的消息回调函数
 
+
+
 protected:
     bool InitMainWindow();      // 窗口初始化
     bool InitDirect3D();        // Direct3D初始化
+    //ImGui
+    bool InitImGui();
 
     void CalculateFrameStats(); // 计算每秒帧数并在窗口显示
 

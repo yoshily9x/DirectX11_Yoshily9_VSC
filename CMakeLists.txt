@@ -15,7 +15,7 @@ set(SHADER_STATIC_COMPILE ON)
 
 # 使用ImGui时设置为ON
 # 需要将项目中的ImGui文件夹复制进来，保留*.h/*.cpp/CMakeLists.txt
-set(USE_IMGUI OFF)
+set(USE_IMGUI ON)
 
 # 使用Assimp时设置为ON
 # 需要将解压的assimp文件夹内CMakeList.txt所在的全部文件复制到当前项目的Assimp文件夹内
@@ -84,7 +84,9 @@ if (${USE_IMGUI})
     add_subdirectory(ImGui)
     target_compile_definitions(${TARGET_NAME} PRIVATE USE_IMGUI)
     target_link_libraries(${TARGET_NAME} ImGui)
-    file(COPY imgui.ini DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/imgui.ini)
+        file(COPY imgui.ini DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
 endif()
 
 if (${USE_ASSIMP})

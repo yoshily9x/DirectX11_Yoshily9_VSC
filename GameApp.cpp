@@ -42,6 +42,11 @@ void GameApp::OnResize()
 // 每帧更新
 void GameApp::UpdateScene(float dt)
 {
+    // ImGui示例窗口
+    ImGui::ShowAboutWindow();
+    ImGui::ShowDemoWindow();
+    ImGui::ShowUserGuide();
+    
     static float phi = 0.0f, theta = 0.0f;
     phi += 0.3f * dt; theta += 0.37f * dt; // 旋转角度
     m_CBuffer.world = XMMatrixTranspose(XMMatrixRotationX(phi) * XMMatrixRotationY(theta)); //更新世界矩阵
@@ -68,6 +73,11 @@ void GameApp::DrawScene()
 
     // 绘制立方体
     m_pd3dImmediateContext->DrawIndexed(36, 0, 0);// 绘制立方体, 36个顶点, 从第0个顶点开始
+
+    // 绘制ImGui
+    ImGui::Render();
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
     HR(m_pSwapChain->Present(0, 0));//交换前后缓冲区并显示到屏幕上
 }
 
