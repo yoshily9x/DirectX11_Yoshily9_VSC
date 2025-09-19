@@ -1,0 +1,10 @@
+^Z:\DEVELOPMENTS\DIRECTX11\DIRECTX11_YOSHILY9_VSC\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SZ:/Developments/DirectX11/DirectX11_Yoshily9_VSC "-BZ:/Developments/DirectX11/DirectX11_Yoshily9_VSC/out/build/Visual Studio Community 2022 Release - amd64_x86" --check-stamp-file "Z:/Developments/DirectX11/DirectX11_Yoshily9_VSC/out/build/Visual Studio Community 2022 Release - amd64_x86/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

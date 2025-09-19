@@ -20,6 +20,9 @@ public:
         DirectX::XMMATRIX world;
         DirectX::XMMATRIX view;
         DirectX::XMMATRIX proj;
+        DirectX::XMFLOAT4 color;
+        uint32_t useCustomColor; // 是否使用自定义颜色
+        uint32_t pads[3]; // 填充32位以保证对齐
     };
 
 public:

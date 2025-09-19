@@ -3,6 +3,8 @@ cbuffer ConstantBuffer : register(b0)
     matrix g_world;//世界矩阵
     matrix g_view; //视图矩阵
     matrix g_proj; //投影矩阵
+    vector g_Color; //颜色
+    uint g_UseCustomColor; //是否使用自定义颜色
 }
 
 struct VertexIn

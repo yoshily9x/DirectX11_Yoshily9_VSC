@@ -42,14 +42,91 @@ void GameApp::OnResize()
 // 每帧更新
 void GameApp::UpdateScene(float dt)
 {
+    //----------------------ImGui示例代码-----------------------
     // ImGui示例窗口
-    ImGui::ShowAboutWindow();
-    ImGui::ShowDemoWindow();
-    ImGui::ShowUserGuide();
-    
-    static float phi = 0.0f, theta = 0.0f;
-    phi += 0.3f * dt; theta += 0.37f * dt; // 旋转角度
-    m_CBuffer.world = XMMatrixTranspose(XMMatrixRotationX(phi) * XMMatrixRotationY(theta)); //更新世界矩阵
+    //ImGui::ShowAboutWindow();
+    //ImGui::ShowDemoWindow();
+    //ImGui::ShowUserGuide();
+
+    // 获取IO事件
+    ImGuiIO& io = ImGui::GetIO();
+    //
+    // 自定义窗口与操作
+    //
+    static float tx = 0.0f, ty = 0.0f, phi = 0.0f, theta = 0.0f, scale = 1.0f, fov = XM_PIDIV2;
+    static bool animateCube = true, customColor = false;
+    if (animateCube)
+    {
+        phi += 0.3f * dt, theta += 0.37f * dt;
+        phi = XMScalarModAngle(phi);
+        theta = XMScalarModAngle(theta);
+    }
+    if (ImGui::Begin("Use ImGui"))
+    {
+        ImGui::Checkbox("Animate Cube", &animateCube);// 复选框
+        ImGui::SameLine(0.0f, 25.0f);// 下一个控件在同一行往右25像素单位
+        if (ImGui::Button("Reset Params"))// 按钮
+        {
+            tx = ty = phi = theta = 0.0f;
+            scale = 1.0f;
+            fov = XM_PIDIV2;
+        }
+        ImGui::SliderFloat("Scale", &scale, 0.2f, 2.0f);// 拖动控制物体大小
+
+        ImGui::Text("Phi: %.2f degrees", XMConvertToDegrees(phi));// 显示文字，用于描述下面的控件 
+        ImGui::SliderFloat("##1", &phi, -XM_PI, XM_PI, "");     // 不显示文字，但避免重复的标签
+        ImGui::Text("Theta: %.2f degrees", XMConvertToDegrees(theta));
+        ImGui::SliderFloat("##2", &theta, -XM_PI, XM_PI, "");
+
+        ImGui::Text("Position: (%.1f, %.1f, 0.0)", tx, ty);
+
+        ImGui::Text("FOV: %.2f degrees", XMConvertToDegrees(fov));
+        ImGui::SliderFloat("##3", &fov, XM_PIDIV4, XM_PI / 3 * 2, "");
+        
+        // Custom color functionality removed - ConstantBuffer structure doesn't support it
+        if (ImGui::Checkbox("Use Custom Color", &customColor))
+            m_CBuffer.useCustomColor = customColor;  
+        // 下面的控件受上面的复选框影响
+        if (customColor)
+        {
+            ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&m_CBuffer.color));// 编辑颜色
+        }
+    }
+    ImGui::End();
+
+    // 不允许在操作UI时操作物体
+    if (!ImGui::IsAnyItemActive())
+    {
+        // 鼠标左键拖动平移
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+        {
+            tx += io.MouseDelta.x * 0.01f;
+            ty -= io.MouseDelta.y * 0.01f;
+        }
+        // 鼠标右键拖动旋转
+        else if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+        {
+            phi -= io.MouseDelta.y * 0.01f;
+            theta -= io.MouseDelta.x * 0.01f;
+            phi = XMScalarModAngle(phi);
+            theta = XMScalarModAngle(theta);
+        }
+        // 鼠标滚轮缩放
+        else if (io.MouseWheel != 0.0f)
+        {
+            scale += 0.02f * io.MouseWheel;
+            if (scale > 2.0f)
+                scale = 2.0f;
+            else if (scale < 0.2f)
+                scale = 0.2f;
+        }
+    }
+
+    m_CBuffer.world = XMMatrixTranspose(
+        XMMatrixScalingFromVector(XMVectorReplicate(scale)) * 
+        XMMatrixRotationX(phi) * XMMatrixRotationY(theta) * 
+        XMMatrixTranslation(tx, ty, 0.0f)); // 更新世界矩阵
+    m_CBuffer.proj = XMMatrixTranspose(XMMatrixPerspectiveFovLH(fov, AspectRatio(), 1.0f, 1000.0f)); //更新投影矩阵
     // 更新常量缓冲区，让立方体转起来
     D3D11_MAPPED_SUBRESOURCE mappedData; // 映射子资源
     HR(m_pd3dImmediateContext->Map(m_pConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData)); // 映射，获取指向缓冲区中数据的指针并拒绝GPU访问
@@ -206,6 +283,8 @@ bool GameApp::InitResource()
         XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)   // UpDirection
     ));
     m_CBuffer.proj = XMMatrixTranspose(XMMatrixPerspectiveFovLH(XM_PIDIV2, AspectRatio(), 1.0f, 1000.0f));
+    m_CBuffer.color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    m_CBuffer.useCustomColor = false;
 
 
     // **********给渲染管线各个阶段绑定好所需资源**********
@@ -224,6 +303,8 @@ bool GameApp::InitResource()
     m_pd3dImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
     // 将更新好的常量缓冲区绑定到顶点着色器
     m_pd3dImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+    m_pd3dImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());//如果像素着色器有调用到常量缓冲区数据，就要绑定
+
     m_pd3dImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
 
     
