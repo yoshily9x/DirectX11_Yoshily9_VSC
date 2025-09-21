@@ -19,6 +19,12 @@
       <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\out\build\Visual Studio Community 2022 Release - amd64_x86\HLSL\Cube\Cube_VS.cso</FullPath>
     </ContentFile>
     <ContentFile>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\out\build\Visual Studio Community 2022 Release - amd64_x86\HLSL\Lighting\Light_PS.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\out\build\Visual Studio Community 2022 Release - amd64_x86\HLSL\Lighting\Light_VS.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
       <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\out\build\Visual Studio Community 2022 Release - amd64_x86\HLSL\Triangle\Triangle_PS.cso</FullPath>
     </ContentFile>
     <ContentFile>

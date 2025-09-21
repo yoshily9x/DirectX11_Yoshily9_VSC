@@ -13,6 +13,9 @@
     <ClCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Vertex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\d3dApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -28,6 +31,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\GameApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Geometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\LightHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Vertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\WinMin.h">
@@ -48,6 +60,12 @@
       <Filter>HLSL Files</Filter>
     </FXCompile>
     <FXCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\HLSL\Cube\Cube_VS.hlsl">
+      <Filter>HLSL Files</Filter>
+    </FXCompile>
+    <FXCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\HLSL\Lighting\Light_PS.hlsl">
+      <Filter>HLSL Files</Filter>
+    </FXCompile>
+    <FXCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\HLSL\Lighting\Light_VS.hlsl">
       <Filter>HLSL Files</Filter>
     </FXCompile>
     <FXCompile Include="Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\HLSL\Triangle\Triangle_PS.hlsl">
