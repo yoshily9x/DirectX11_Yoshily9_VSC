@@ -10,6 +10,18 @@
   </ProjectOutputs>
   <ContentFiles>
     <ContentFile>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\out\build\Visual Studio Community 2022 Release - amd64_x86\HLSL\Basic\Basic_2D_PS.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\out\build\Visual Studio Community 2022 Release - amd64_x86\HLSL\Basic\Basic_2D_VS.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\out\build\Visual Studio Community 2022 Release - amd64_x86\HLSL\Basic\Basic_3D_PS.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\out\build\Visual Studio Community 2022 Release - amd64_x86\HLSL\Basic\Basic_3D_VS.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
       <FullPath>Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\out\build\Visual Studio Community 2022 Release - amd64_x86\HLSL\Cube\Cube_PS.cso</FullPath>
     </ContentFile>
     <ContentFile>

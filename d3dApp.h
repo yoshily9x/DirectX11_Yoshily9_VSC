@@ -4,8 +4,16 @@
 #include <wrl/client.h>
 #include <string>
 #include "WinMin.h"
+
+#include <d2d1.h>
+#include <dwrite.h>
+
 #include <d3d11_1.h>
 #include <DirectXMath.h>
+
+#include "Inputs/Mouse.h"
+#include "Inputs/Keyboard.h"
+
 #include "CpuTimer.h"
 
 //IMGUI
@@ -33,10 +41,9 @@ public:
     virtual void DrawScene() = 0;               // 子类需要实现该方法，完成每一帧的绘制
     virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);    // 窗口的消息回调函数
 
-
-
 protected:
     bool InitMainWindow();      // 窗口初始化
+    bool InitDirect2D();		// Direct2D初始化
     bool InitDirect3D();        // Direct3D初始化
     //ImGui
     bool InitImGui();
@@ -54,12 +61,17 @@ protected:
     bool      m_Enable4xMsaa;    // 是否开启4倍多重采样
     UINT      m_4xMsaaQuality;   // MSAA支持的质量等级
 
-
     CpuTimer m_Timer;            // 计时器
 
     // 使用模板别名(C++11)简化类型名
     template <class T>
     using ComPtr = Microsoft::WRL::ComPtr<T>;
+
+    // Direct2D
+    //ComPtr<ID2D1Factory> m_pd2dFactory;				   // D2D工厂
+    //ComPtr<ID2D1RenderTarget> m_pd2dRenderTarget;		   // D2D渲染目标
+    //ComPtr<IDWriteFactory> m_pdwriteFactory;			   // DWrite工厂
+
     // Direct3D 11
     ComPtr<ID3D11Device> m_pd3dDevice;                    // D3D11设备
     ComPtr<ID3D11DeviceContext> m_pd3dImmediateContext;   // D3D11设备上下文
@@ -72,7 +84,13 @@ protected:
     ComPtr<ID3D11Texture2D> m_pDepthStencilBuffer;        // 深度模板缓冲区
     ComPtr<ID3D11RenderTargetView> m_pRenderTargetView;   // 渲染目标视图
     ComPtr<ID3D11DepthStencilView> m_pDepthStencilView;   // 深度模板视图
-    D3D11_VIEWPORT m_ScreenViewport;                      // 视口
+    D3D11_VIEWPORT m_ScreenViewport;    
+    
+    //键鼠输入
+    //std::unique_ptr<DirectX::Mouse> m_pMouse;					// 鼠标
+    //DirectX::Mouse::ButtonStateTracker m_MouseTracker;			// 鼠标状态追踪器
+    //std::unique_ptr<DirectX::Keyboard> m_pKeyboard;				// 键盘
+    //DirectX::Keyboard::KeyboardStateTracker m_KeyboardTracker;	// 键盘状态追踪器
 
     // 派生类应该在构造函数设置好这些自定义的初始参数
     std::wstring m_MainWndCaption;                       // 主窗口标题

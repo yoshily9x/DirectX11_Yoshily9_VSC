@@ -35,8 +35,15 @@ file(GLOB_RECURSE HLSL_FILES ${HLSL_DIR}/*.hlsl)
 file(GLOB HEADER_FILES ./*.h)
 
 aux_source_directory(. DIR_SRCS)
+aux_source_directory(Inputs INPUTS_SRCS)
 
-add_executable(${TARGET_NAME} WIN32 ${DIR_SRCS} ${HEADER_FILES})
+# 添加纹理加载器源文件
+set(TEXTURE_LOADER_SRCS 
+    DDSTextureLoader11.cpp
+    WICTextureLoader11.cpp
+)
+
+add_executable(${TARGET_NAME} WIN32 ${DIR_SRCS} ${INPUTS_SRCS} ${TEXTURE_LOADER_SRCS} ${HEADER_FILES})
 target_link_libraries(${TARGET_NAME} d3d11.lib dxgi.lib dxguid.lib D3DCompiler.lib winmm.lib d2d1.lib dwrite.lib)
 source_group("HLSL Files" FILES ${HLSL_FILES})
 file(COPY ${HLSL_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
