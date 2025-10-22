@@ -3,39 +3,12 @@
 #include "DXTrace.h"
 using namespace DirectX;//使用DirectX命名空间, 方便使用XMFLOAT3等类型
 
-//顶点结构体对应shader, 描述成员用途
-/*const D3D11_INPUT_ELEMENT_DESC GameApp::VertexPosColor::inputLayout[2] = {
-    { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-};
-
-
-GameApp::GameApp(HINSTANCE hInstance, const std::wstring& windowName, int initWidth, int initHeight)
-    : D3DApp(hInstance, windowName, initWidth, initHeight), m_CBuffer()
-{
-}*/
-
-/*
 GameApp::GameApp(HINSTANCE hInstance, const std::wstring& windowName, int initWidth, int initHeight)
     : D3DApp(hInstance, windowName, initWidth, initHeight),
-    m_IndexCount(),
-    m_IsWireframeMode(),
-    m_VSConstantBuffer(),
-    m_PSConstantBuffer(),
-    m_DirLight(),
-    m_PointLight(),
-    m_SpotLight()
-{ 
-}
-*/
-
-GameApp::GameApp(HINSTANCE hInstance, const std::wstring& windowName, int initWidth, int initHeight)
-    : D3DApp(hInstance, windowName, initWidth, initHeight),
-    m_IndexCount(),	
-    m_CurrFrame(),
-    m_CurrMode(ShowMode::WoodCrate),
-    m_VSConstantBuffer(),
-    m_PSConstantBuffer()
+    m_CameraMode(CameraMode::FirstPerson),
+    m_CBFrame(),
+    m_CBOnResize(),
+    m_CBRarely()
 {
 }
 
@@ -53,380 +26,167 @@ bool GameApp::Init()
 
     if (!InitResource())
         return false;
-
-    // 初始化鼠标，键盘不需要
-    /*
-    m_pMouse->SetWindow(m_hMainWnd);
-    m_pMouse->SetMode(DirectX::Mouse::MODE_ABSOLUTE);
-    */
+        
     return true;
 }
 
 
 void GameApp::OnResize()
 {
-    /*
-    assert(m_pd2dFactory);
-    assert(m_pdwriteFactory);
-
-    //释放D2D相关资源
-    m_pColorBrush.Reset();
-    m_pd2dRenderTarget.Reset();
-    */
-
     D3DApp::OnResize();
 
-    // 创建D2D渲染目标
-    /*
-    ComPtr<IDXGISurface> surface;
-    HR(m_pSwapChain->GetBuffer(0, __uuidof(IDXGISurface), reinterpret_cast<void**>(surface.GetAddressOf())));
-    D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties(
-        D2D1_RENDER_TARGET_TYPE_DEFAULT,
-        D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED));
-    HRESULT hr = m_pd2dFactory->CreateDxgiSurfaceRenderTarget(surface.Get(), &props, m_pd2dRenderTarget.GetAddressOf());
-    surface.Reset();
-
-    if(hr == E_NOINTERFACE)
+    // 摄像机变更显示
+    if(m_pCamera != nullptr)
     {
-        OutputDebugStringW(L"\n警告:Direct2D与Direct3D互操作性功能受限, 你将无法看到文本信息。现提供下述可选方法：\n"
-            L"1. 对于Win7系统, 需要更新至Win7 SP1, 并安装KB2670838补丁以支持Direct2D显示。\n"
-            L"2. 自行完成Direct3D 10.1与Direct2D的交互。详情参阅:"
-            L"https://docs.microsoft.com/zh-cn/windows/desktop/Direct2D/direct2d-and-direct3d-interoperation-overview""\n"
-            L"3. 使用别的字体库, 比如FreeType。\n\n");
+        m_pCamera->SetFrustum(XM_PI / 3, AspectRatio(), 0.5f, 1000.0f);
+        m_pCamera->SetViewPort(0.0f, 0.0f, (float)m_ClientWidth, (float)m_ClientHeight);
+        m_CBOnResize.proj = XMMatrixTranspose(m_pCamera->GetProjXM());
+       
+        D3D11_MAPPED_SUBRESOURCE mappedData;
+        HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[2].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+        memcpy_s(mappedData.pData, sizeof(CBChangesOnResize), &m_CBOnResize, sizeof(CBChangesOnResize));
+        m_pd3dImmediateContext->Unmap(m_pConstantBuffers[2].Get(), 0);
     }
-    else if(hr == S_OK)
-    {
-        // 创建固定颜色刷和文本格式
-        HR(m_pd2dRenderTarget->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::White),
-            m_pColorBrush.GetAddressOf()));
-        HR(m_pdwriteFactory->CreateTextFormat(L"宋体", nullptr, DWRITE_FONT_WEIGHT_NORMAL,
-            DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 20, L"zh-cn",
-            m_pTextFormat.GetAddressOf()));
-    }
-    else
-    {
-        // 其他错误，输出错误信息
-        OutputDebugStringW(L"\nDirect2D渲染目标创建失败，错误代码: ");
-        OutputDebugStringW(std::to_wstring(hr).c_str());
-        OutputDebugStringW(L"\n");
-        assert(m_pd2dRenderTarget);
-    }
-    */
 }
 
 // 每帧更新
 void GameApp::UpdateScene(float dt)
 {
-    if (ImGui::Begin("Texture Mapping"))
-    {
-        static int curr_mode_item = static_cast<int>(m_CurrMode);
-        const char* mode_strs[] = {
-            "Box",
-            "Fire Anim"
-        };
-        if (ImGui::Combo("Mode", &curr_mode_item, mode_strs, ARRAYSIZE(mode_strs)))
-        {
-            if (curr_mode_item == 0)
-            {
-                // 播放木箱动画
-                m_CurrMode = ShowMode::WoodCrate;
-                m_pd3dImmediateContext->IASetInputLayout(m_pVertexLayout3D.Get());
-                auto meshData = Geometry::CreateBox();
-                ResetMesh(meshData);
-                m_pd3dImmediateContext->VSSetShader(m_pVertexShader3D.Get(), nullptr, 0);
-                m_pd3dImmediateContext->PSSetShader(m_pPixelShader3D.Get(), nullptr, 0);
-                m_pd3dImmediateContext->PSSetShaderResources(0, 1, m_pWoodCrate.GetAddressOf());
-            }
-            else
-            {
-                m_CurrMode = ShowMode::FireAnim;
-                m_CurrFrame = 0;
-                m_pd3dImmediateContext->IASetInputLayout(m_pVertexLayout2D.Get());
-                auto meshData = Geometry::Create2DShow();
-                ResetMesh(meshData);
-                m_pd3dImmediateContext->VSSetShader(m_pVertexShader2D.Get(), nullptr, 0);
-                m_pd3dImmediateContext->PSSetShader(m_pPixelShader2D.Get(), nullptr, 0);
-                m_pd3dImmediateContext->PSSetShaderResources(0, 1, m_pFireAnims[0].GetAddressOf());
-            }
-        }
-    }
-    ImGui::End();
-    ImGui::Render();
+    // 获取子类
+    auto cam1st = std::dynamic_pointer_cast<FirstPersonCamera>(m_pCamera);
+    auto cam3rd = std::dynamic_pointer_cast<ThirdPersonCamera>(m_pCamera);
 
-    if (m_CurrMode == ShowMode::WoodCrate)
-    {
-        static float phi = 0.0f, theta = 0.0f;
-        phi += 0.0001f, theta += 0.00015f;
-        XMMATRIX W = XMMatrixRotationX(phi) * XMMatrixRotationY(theta);
-        m_VSConstantBuffer.world = XMMatrixTranspose(W);
-        m_VSConstantBuffer.worldInvTranspose = XMMatrixTranspose(InverseTranspose(W));
+    Transform& woodCrateTransform = m_WoodCrate.GetTransform();
 
-        // 更新常量缓冲区，让立方体转起来
-        D3D11_MAPPED_SUBRESOURCE mappedData;
-        HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[0].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
-        memcpy_s(mappedData.pData, sizeof(VSConstantBuffer), &m_VSConstantBuffer, sizeof(VSConstantBuffer));
-        m_pd3dImmediateContext->Unmap(m_pConstantBuffers[0].Get(), 0);
-    }
-    else if (m_CurrMode == ShowMode::FireAnim)
-    {
-        // 用于限制在1秒60帧
-        static float totDeltaTime = 0;
-
-        totDeltaTime += dt;
-        if (totDeltaTime > 1.0f / 60)
-        {
-            totDeltaTime -= 1.0f / 60;
-            m_CurrFrame = (m_CurrFrame + 1) % 120;
-            m_pd3dImmediateContext->PSSetShaderResources(0, 1, m_pFireAnims[m_CurrFrame].GetAddressOf());
-        }		
-    }  
-
-    /*--------------------模型/灯光切换------------------------
-    static float phi = 0.0f, theta = 0.0f;
-    phi += 0.3f * dt, theta += 0.37f * dt;
-    XMMATRIX W = XMMatrixRotationX(phi) * XMMatrixRotationY(theta);
-    m_VSConstantBuffer.world = XMMatrixTranspose(W);
-    m_VSConstantBuffer.worldInvTranspose = XMMatrixTranspose(InverseTranspose(W));
-
-    // 键盘切换灯光类型
-    Keyboard::State state = m_pKeyboard->GetState();
-    m_KeyboardTracker.Update(state);	
-    if (m_KeyboardTracker.IsKeyPressed(Keyboard::D1))
-    {
-        m_PSConstantBuffer.dirLight = m_DirLight;
-        m_PSConstantBuffer.pointLight = PointLight();
-        m_PSConstantBuffer.spotLight = SpotLight();
-    }
-    else if (m_KeyboardTracker.IsKeyPressed(Keyboard::D2))
-    {
-        m_PSConstantBuffer.dirLight = DirectionalLight();
-        m_PSConstantBuffer.pointLight = m_PointLight;
-        m_PSConstantBuffer.spotLight = SpotLight();
-    }
-    else if (m_KeyboardTracker.IsKeyPressed(Keyboard::D3))
-    {
-        m_PSConstantBuffer.dirLight = DirectionalLight();
-        m_PSConstantBuffer.pointLight = PointLight();
-        m_PSConstantBuffer.spotLight = m_SpotLight;
-    }
-
-    // 键盘切换模型类型
-    if (m_KeyboardTracker.IsKeyPressed(Keyboard::Q))
-    {
-        auto meshData = Geometry::CreateBox<VertexPosNormalColor>();
-        ResetMesh(meshData);
-    }
-    else if (m_KeyboardTracker.IsKeyPressed(Keyboard::W))
-    {
-        auto meshData = Geometry::CreateSphere<VertexPosNormalColor>();
-        ResetMesh(meshData);
-    }
-    else if (m_KeyboardTracker.IsKeyPressed(Keyboard::E))
-    {
-        auto meshData = Geometry::CreateCylinder<VertexPosNormalColor>();
-        ResetMesh(meshData);
-    }
-    else if (m_KeyboardTracker.IsKeyPressed(Keyboard::R))
-    {
-        auto meshData = Geometry::CreateCone<VertexPosNormalColor>();
-        ResetMesh(meshData);
-    }
-    // 键盘切换光栅化状态
-    else if (m_KeyboardTracker.IsKeyPressed(Keyboard::S))
-    {
-        m_IsWireframeMode = !m_IsWireframeMode;
-        m_pd3dImmediateContext->RSSetState(m_IsWireframeMode ? m_pRSWireframe.Get() : nullptr);
-    }
-
-    if(ImGui::Begin("Lighting"))
-    {
-        static int curr_mesh_item = 0;
-        const char* mesh_strs[] = {
-            "Box",
-            "Sphere",
-            "Cylinder",
-            "Cone"
-        };
-        if(ImGui::Combo("Mehs", &curr_mesh_item, mesh_strs, ARRAYSIZE(mesh_strs)))
-        {
-            Geometry::MeshData<VertexPosNormalColor> meshData;
-            switch(curr_mesh_item)
-            {
-                case 0:
-                    meshData = Geometry::CreateBox<VertexPosNormalColor>(); break;
-                case 1:
-                    meshData = Geometry::CreateSphere<VertexPosNormalColor>(); break;
-                case 2:
-                    meshData = Geometry::CreateCylinder<VertexPosNormalColor>(); break;
-                case 3:
-                    meshData = Geometry::CreateCone<VertexPosNormalColor>(); break;
-            }
-            ResetMesh(meshData);
-        }
-
-        bool mat_changed = false;
-        ImGui::Text("Material");
-        ImGui::PushID(3);
-        ImGui::ColorEdit3("Ambient", &m_PSConstantBuffer.material.ambient.x);
-        ImGui::ColorEdit3("Diffuse", &m_PSConstantBuffer.material.diffuse.x);
-        ImGui::ColorEdit3("Specular", &m_PSConstantBuffer.material.specular.x);
-        ImGui::PopID();
-
-        static int curr_light_item = 0;
-        static const char* light_modes[] = {
-            "Directional Light",
-            "Point Light",
-            "Spot Light"
-        };
-        ImGui::Text("Light");
-        if (ImGui::Combo("Light Type", &curr_light_item, light_modes, ARRAYSIZE(light_modes)))
-        {
-            m_PSConstantBuffer.dirLight = (curr_light_item == 0 ? m_DirLight : DirectionalLight());
-            m_PSConstantBuffer.pointLight = (curr_light_item == 1 ? m_PointLight : PointLight());
-            m_PSConstantBuffer.spotLight = (curr_light_item == 2 ? m_SpotLight : SpotLight());
-        }
-
-        bool light_changed = false;
-        // 添加ID区分同名控件
-        ImGui::PushID(curr_light_item);
-        if (curr_light_item == 0)
-        {
-            ImGui::ColorEdit3("Ambient", &m_PSConstantBuffer.dirLight.ambient.x);
-            ImGui::ColorEdit3("Diffuse", &m_PSConstantBuffer.dirLight.diffuse.x);
-            ImGui::ColorEdit3("Specular", &m_PSConstantBuffer.dirLight.specular.x);
-        }
-        else if (curr_light_item == 1)
-        {
-            ImGui::ColorEdit3("Ambient", &m_PSConstantBuffer.pointLight.ambient.x);
-            ImGui::ColorEdit3("Diffuse", &m_PSConstantBuffer.pointLight.diffuse.x);
-            ImGui::ColorEdit3("Specular", &m_PSConstantBuffer.pointLight.specular.x);
-            ImGui::InputFloat("Range", &m_PSConstantBuffer.pointLight.range);
-            ImGui::InputFloat3("Attenutation", &m_PSConstantBuffer.pointLight.attenuation.x);
-        }
-        else
-        {
-            ImGui::ColorEdit3("Ambient", &m_PSConstantBuffer.spotLight.ambient.x);
-            ImGui::ColorEdit3("Diffuse", &m_PSConstantBuffer.spotLight.diffuse.x);
-            ImGui::ColorEdit3("Specular", &m_PSConstantBuffer.spotLight.specular.x);
-            ImGui::InputFloat("Spot", &m_PSConstantBuffer.spotLight.spot);
-            ImGui::InputFloat("Range", &m_PSConstantBuffer.spotLight.range);
-            ImGui::InputFloat3("Attenutation", &m_PSConstantBuffer.spotLight.attenuation.x);
-        }
-        ImGui::PopID();
-
-
-        if (ImGui::Checkbox("WireFrame Mode", &m_IsWireframeMode))
-        {
-            m_pd3dImmediateContext->RSSetState(m_IsWireframeMode ? m_pRSWireframe.Get() : nullptr);
-        }
-    }
-    ImGui::End();
-    ImGui::Render();
-
-    // 更新常量缓冲区，让立方体转起来
-    D3D11_MAPPED_SUBRESOURCE mappedData;// 映射到显存
-    HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[0].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
-    memcpy_s(mappedData.pData, sizeof(VSConstantBuffer), &m_VSConstantBuffer, sizeof(VSConstantBuffer));
-    m_pd3dImmediateContext->Unmap(m_pConstantBuffers[0].Get(), 0);
-
-    HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[1].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
-    memcpy_s(mappedData.pData, sizeof(PSConstantBuffer), &m_PSConstantBuffer, sizeof(PSConstantBuffer));
-    m_pd3dImmediateContext->Unmap(m_pConstantBuffers[1].Get(), 0);
-    */
-
-    /*----------------------ImGui示例代码-----------------------
-    // ImGui示例窗口
-    // ImGui::ShowAboutWindow();
-    // ImGui::ShowDemoWindow();
-    // ImGui::ShowUserGuide();
-
-    // 获取IO事件
     ImGuiIO& io = ImGui::GetIO();
-    //
-    // 自定义窗口与操作
-    //
-    static float tx = 0.0f, ty = 0.0f, phi = 0.0f, theta = 0.0f, scale = 1.0f, fov = XM_PIDIV2;
-    static bool animateCube = true, customColor = false;
-    if (animateCube)
+    if(m_CameraMode == CameraMode::FirstPerson || m_CameraMode == CameraMode::Free)
     {
-        phi += 0.3f * dt, theta += 0.37f * dt;
-        phi = XMScalarModAngle(phi);
-        theta = XMScalarModAngle(theta);
-    }
-    if (ImGui::Begin("Use ImGui"))
-    {
-        ImGui::Checkbox("Animate Cube", &animateCube);// 复选框
-        ImGui::SameLine(0.0f, 25.0f);// 下一个控件在同一行往右25像素单位
-        if (ImGui::Button("Reset Params"))// 按钮
-        {
-            tx = ty = phi = theta = 0.0f;
-            scale = 1.0f;
-            fov = XM_PIDIV2;
-        }
-        ImGui::SliderFloat("Scale", &scale, 0.2f, 2.0f);// 拖动控制物体大小
-
-        ImGui::Text("Phi: %.2f degrees", XMConvertToDegrees(phi));// 显示文字，用于描述下面的控件 
-        ImGui::SliderFloat("##1", &phi, -XM_PI, XM_PI, "");     // 不显示文字，但避免重复的标签
-        ImGui::Text("Theta: %.2f degrees", XMConvertToDegrees(theta));
-        ImGui::SliderFloat("##2", &theta, -XM_PI, XM_PI, "");
-
-        ImGui::Text("Position: (%.1f, %.1f, 0.0)", tx, ty);
-
-        ImGui::Text("FOV: %.2f degrees", XMConvertToDegrees(fov));
-        ImGui::SliderFloat("##3", &fov, XM_PIDIV4, XM_PI / 3 * 2, "");
+        // 第一人称/自由摄像机操作
+        float d1 = 0.0f, d2 = 0.0f;
+        if (ImGui::IsKeyDown(ImGuiKey_W))
+            d1 += dt;
+        if (ImGui::IsKeyDown(ImGuiKey_S))
+            d1 -=dt;
+        if (ImGui::IsKeyDown(ImGuiKey_A))
+            d2 -= dt;
+        if (ImGui::IsKeyDown(ImGuiKey_D))
+            d2 += dt;
         
-        // Custom color functionality removed - ConstantBuffer structure doesn't support it
-        if (ImGui::Checkbox("Use Custom Color", &customColor))
-            m_CBuffer.useCustomColor = customColor;  
-        // 下面的控件受上面的复选框影响
-        if (customColor)
+        if (m_CameraMode == CameraMode::FirstPerson)
+            cam1st->Walk(d1 * 6.0f);
+        else
+            cam1st->MoveForward(d1 * 6.0f);
+        cam1st->Strafe(d2 * 6.0f);
+
+        // 将摄像机位置限制在[-8.9, 8.9]x[-8.9, 8.9]x[0.0, 8.9]的区域内
+        // 不允许穿地
+        XMFLOAT3 adjustedPos;
+        XMStoreFloat3(&adjustedPos, XMVectorClamp(cam1st->GetPositionXM(), 
+                      XMVectorSet(-8.9f, 0.0f, -8.9f, 0.0f), 
+                      XMVectorReplicate(8.9f)));
+        cam1st->SetPosition(adjustedPos);
+
+        // 仅在第一人称模式移动摄像机的同事移动箱子
+        if (m_CameraMode == CameraMode::FirstPerson)
+            woodCrateTransform.SetPosition(adjustedPos);
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
         {
-            ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&m_CBuffer.color));// 编辑颜色
+            cam1st->Pitch(io.MouseDelta.y * 0.01f);
+            cam1st->RotateY(io.MouseDelta.x * 0.01f);
         }
+    }
+    else if (m_CameraMode == CameraMode::ThirdPerson)
+    {
+        // 第三人称摄像机的操作
+        cam3rd->SetTarget(woodCrateTransform.GetPosition());
+
+        // 绕物体旋转
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+        {
+            cam3rd->RotateX(io.MouseDelta.y * 0.01f);
+            cam3rd->RotateY(io.MouseDelta.x * 0.01f);
+        }
+        cam3rd->Approach(-io.MouseWheel * 1.0f);
+    }
+
+    // 更新观察矩阵
+    XMStoreFloat4(&m_CBFrame.eyePos, m_pCamera->GetPositionXM());
+    m_CBFrame.view = XMMatrixTranspose(m_pCamera->GetViewXM());
+    
+    if (ImGui::Begin("Camera"))
+    {
+        ImGui::Text("W/S/A/D in FPS/Free camera");
+        ImGui::Text("Hold the right mouse button and drag the view");
+        ImGui::Text("The box moves only at First Person mode");
+
+        static int curr_item = 0;
+        static const char* modes[] = {
+            "First Person",
+            "Third Person",
+            "Free"
+        };
+        if (ImGui::Combo("Camera Mode", &curr_item, modes, ARRAYSIZE(modes)))
+        {
+            if(curr_item == 0 && m_CameraMode != CameraMode::FirstPerson)
+            {
+                if(!cam1st)
+                {
+                    cam1st = std::make_shared<FirstPersonCamera>();
+                    cam1st->SetFrustum(XM_PI / 3, AspectRatio(), 0.5f, 1000.0f);
+                    m_pCamera = cam1st;
+                }
+
+                cam1st->LookTo(woodCrateTransform.GetPosition(),
+                    XMFLOAT3(0.0f, 0.0f, 1.0f),
+                    XMFLOAT3(0.0f, 1.0f, 0.0f));
+                
+                m_CameraMode = CameraMode::FirstPerson;
+            }
+            else if (curr_item == 1 && m_CameraMode != CameraMode::ThirdPerson)
+            {
+                if(!cam3rd)
+                {
+                    cam3rd = std::make_shared<ThirdPersonCamera>();
+                    cam3rd->SetFrustum(XM_PI / 3, AspectRatio(), 0.5f, 1000.0f);
+                    m_pCamera = cam3rd;
+                }
+                XMFLOAT3 target = woodCrateTransform.GetPosition();
+                cam3rd->SetTarget(target);
+                cam3rd->SetDistance(8.0f);
+                cam3rd->SetDistanceMinMax(3.0f, 20.0f);
+
+                m_CameraMode = CameraMode::ThirdPerson;
+            }
+            else if (curr_item == 2 && m_CameraMode != CameraMode::Free)
+            {
+                if(!cam1st)
+                {
+                    cam1st = std::make_shared<FirstPersonCamera>();
+                    cam1st->SetFrustum(XM_PI / 3, AspectRatio(), 0.5f, 1000.0f);
+                    m_pCamera = cam1st;
+                }
+                // 从箱子上方开始
+                XMFLOAT3 pos = woodCrateTransform.GetPosition();
+                XMFLOAT3 to = XMFLOAT3(0.0f, 0.0f, 1.0f);
+                XMFLOAT3 up = XMFLOAT3(0.0f, 1.0f, 0.0f);
+                pos.y += 3;
+                cam1st->LookTo(pos, to, up);
+
+                m_CameraMode = CameraMode::Free;
+            }
+        }
+        auto woodPos = woodCrateTransform.GetPosition();
+        ImGui::Text("Box Position\n%.2f %.2f %.2f", woodPos.x, woodPos.y, woodPos.z);
+        auto cameraPos = m_pCamera->GetPosition();
+        ImGui::Text("Camera Position\n%.2f %.2f %.2f", cameraPos.x, cameraPos.y, cameraPos.z);
     }
     ImGui::End();
+    ImGui::Render();
 
-    // 不允许在操作UI时操作物体
-    if (!ImGui::IsAnyItemActive())
-    {
-        // 鼠标左键拖动平移
-        if (ImGui::IsMouseDragging(ImGuiMouseButton_Left))
-        {
-            tx += io.MouseDelta.x * 0.01f;
-            ty -= io.MouseDelta.y * 0.01f;
-        }
-        // 鼠标右键拖动旋转
-        else if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
-        {
-            phi -= io.MouseDelta.y * 0.01f;
-            theta -= io.MouseDelta.x * 0.01f;
-            phi = XMScalarModAngle(phi);
-            theta = XMScalarModAngle(theta);
-        }
-        // 鼠标滚轮缩放
-        else if (io.MouseWheel != 0.0f)
-        {
-            scale += 0.02f * io.MouseWheel;
-            if (scale > 2.0f)
-                scale = 2.0f;
-            else if (scale < 0.2f)
-                scale = 0.2f;
-        }
-    }
-
-    m_CBuffer.world = XMMatrixTranspose(
-        XMMatrixScalingFromVector(XMVectorReplicate(scale)) * 
-        XMMatrixRotationX(phi) * XMMatrixRotationY(theta) * 
-        XMMatrixTranslation(tx, ty, 0.0f)); // 更新世界矩阵
-    m_CBuffer.proj = XMMatrixTranspose(XMMatrixPerspectiveFovLH(fov, AspectRatio(), 1.0f, 1000.0f)); //更新投影矩阵
-    // 更新常量缓冲区，让立方体转起来
-    D3D11_MAPPED_SUBRESOURCE mappedData; // 映射子资源
-    HR(m_pd3dImmediateContext->Map(m_pConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData)); // 映射，获取指向缓冲区中数据的指针并拒绝GPU访问
-    memcpy_s(mappedData.pData, sizeof(m_CBuffer), &m_CBuffer, sizeof(m_CBuffer)); // 复制数据
-    m_pd3dImmediateContext->Unmap(m_pConstantBuffer.Get(), 0); // 解除映射，让指向资源的指针无效并重启GPU的访问
-    */
-
+    D3D11_MAPPED_SUBRESOURCE mappedData;
+    HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[1].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+    memcpy_s(mappedData.pData, sizeof(CBChangesEveryFrame), &m_CBFrame, sizeof(CBChangesEveryFrame));
+    m_pd3dImmediateContext->Unmap(m_pConstantBuffers[1].Get(), 0);
 }
 
 // 每帧绘制
@@ -436,40 +196,15 @@ void GameApp::DrawScene()
     assert(m_pd3dImmediateContext);// 设备上下文，d3dApp类中创建
     assert(m_pSwapChain);// 交换链，d3dApp类中创建
     
-    //static float black[4] = { 0.0f, 0.0f, 0.0f, 1.0f };// RGBA = (0,0,0,255) 清屏颜色
-    //m_pd3dImmediateContext->ClearRenderTargetView(m_pRenderTargetView.Get(), black);// 用黑色清屏
     m_pd3dImmediateContext->ClearRenderTargetView(m_pRenderTargetView.Get(), reinterpret_cast<const float*>(&Colors::Black));
     m_pd3dImmediateContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);// 清除深度模板缓冲区
 
-    // 绘制三角形
-    //m_pd3dImmediateContext->Draw(3, 0);//绘制三角形, 3个顶点, 从第0个顶点开始
-
-    // 绘制立方体
-    //m_pd3dImmediateContext->DrawIndexed(36, 0, 0);// 绘制立方体, 36个顶点, 从第0个顶点开始
 
     // 绘制几何模型
-    m_pd3dImmediateContext->DrawIndexed(m_IndexCount, 0, 0);
-
-
-    // 绘制Direct2D
-    /*
-    if (m_pd2dRenderTarget != nullptr)
-    {
-        m_pd2dRenderTarget->BeginDraw();
-        std::wstring textStr = L"切换灯光类型: 1-平行光 2-点光 3-聚光灯\n"
-            L"切换模型: Q-立方体 W-球体 E-圆柱体 R-圆锥体\n"
-            L"S-切换模式 当前模式: ";
-        if (m_IsWireframeMode)
-            textStr += L"线框模式";
-        else
-            textStr += L"面模式";
-        m_pd2dRenderTarget->DrawTextW(textStr.c_str(), (UINT32)textStr.size(), m_pTextFormat.Get(),
-            D2D1_RECT_F{ 0.0f, 0.0f, 600.0f, 200.0f }, m_pColorBrush.Get());
-        HR(m_pd2dRenderTarget->EndDraw());
-    }
-    // 绘制ImGui
-    //ImGui::Render();
-    */
+    m_WoodCrate.Draw(m_pd3dImmediateContext.Get());
+    m_Floor.Draw(m_pd3dImmediateContext.Get());
+    for (auto& wall : m_Walls)
+        wall.Draw(m_pd3dImmediateContext.Get());
 
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
@@ -479,22 +214,6 @@ void GameApp::DrawScene()
 bool GameApp::InitEffect()
 {
     ComPtr<ID3DBlob> blob;
-
-    // 创建顶点着色器
-    //HR(CreateShaderFromFile(L"HLSL\\Triangle\\Triangle_VS.cso", L"HLSL\\Triangle\\Triangle_VS.hlsl", "VS", "vs_5_0", blob.ReleaseAndGetAddressOf())); // 三角形顶点着色器
-    //HR(CreateShaderFromFile(L"HLSL\\Cube\\Cube_VS.cso", L"HLSL\\Cube\\Cube_VS.hlsl", "VS", "vs_5_0", blob.ReleaseAndGetAddressOf())); // 立方体顶点着色器
-    //HR(CreateShaderFromFile(L"HLSL\\Lighting\\Light_VS.cso", L"HLSL\\Lighting\\Light_VS.hlsl", "VS", "vs_5_0", blob.ReleaseAndGetAddressOf()));
-    //HR(m_pd3dDevice->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, m_pVertexShader.GetAddressOf()));
-    // 创建并绑定顶点布局
-    //HR(m_pd3dDevice->CreateInputLayout(VertexPosNormalColor::inputLayout, ARRAYSIZE(VertexPosNormalColor::inputLayout),
-        //blob->GetBufferPointer(), blob->GetBufferSize(), m_pVertexLayout.GetAddressOf()));
-    
-    // 创建像素着色器
-    //HR(CreateShaderFromFile(L"HLSL\\Triangle\\Triangle_PS.cso", L"HLSL\\Triangle\\Triangle_PS.hlsl", "PS", "ps_5_0", blob.ReleaseAndGetAddressOf())); // 三角形像素着色器
-    //HR(CreateShaderFromFile(L"HLSL\\Cube\\Cube_PS.cso", L"HLSL\\Cube\\Cube_PS.hlsl", "PS", "ps_5_0", blob.ReleaseAndGetAddressOf())); // 立方体像素着色器
-    //HR(CreateShaderFromFile(L"HLSL\\Lighting\\Light_PS.cso", L"HLSL\\Lighting\\Light_PS.hlsl", "PS", "ps_5_0", blob.ReleaseAndGetAddressOf()));
-    //HR(m_pd3dDevice->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, m_pPixelShader.GetAddressOf()));
-
     // 创建顶点着色器(2D)
     HR(CreateShaderFromFile(L"HLSL\\Basic\\Basic_2D_VS.cso", L"HLSL\\Basic\\Basic_2D_VS.hlsl", "VS", "vs_5_0", blob.ReleaseAndGetAddressOf()));
     HR(m_pd3dDevice->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, m_pVertexShader2D.GetAddressOf()));
@@ -665,9 +384,6 @@ bool GameApp::InitResource()
     // ******************
     // 初始化网格模型
     //
-    auto meshData = Geometry::CreateBox<VertexPosNormalColor>();
-    ResetMesh(meshData);
-
 
     // ******************
     // 设置常量缓冲区描述
@@ -675,111 +391,46 @@ bool GameApp::InitResource()
     D3D11_BUFFER_DESC cbd;
     ZeroMemory(&cbd, sizeof(cbd));
     cbd.Usage = D3D11_USAGE_DYNAMIC;
-    cbd.ByteWidth = sizeof(VSConstantBuffer);
     cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     // 新建用于VS和PS的常量缓冲区
+    cbd.ByteWidth = sizeof(CBChangesEveryDrawing);
     HR(m_pd3dDevice->CreateBuffer(&cbd, nullptr, m_pConstantBuffers[0].GetAddressOf()));
-    cbd.ByteWidth = sizeof(PSConstantBuffer);
+    cbd.ByteWidth = sizeof(CBChangesEveryFrame);
     HR(m_pd3dDevice->CreateBuffer(&cbd, nullptr, m_pConstantBuffers[1].GetAddressOf()));
-
-    // 灯光/模型切换
-    /*
+    cbd.ByteWidth = sizeof(CBChangesOnResize);
+    HR(m_pd3dDevice->CreateBuffer(&cbd, nullptr, m_pConstantBuffers[2].GetAddressOf()));
+    cbd.ByteWidth = sizeof(CBChangesRarely);
+    HR(m_pd3dDevice->CreateBuffer(&cbd, nullptr, m_pConstantBuffers[3].GetAddressOf()));
     // ******************
-    // 初始化默认光照
-    // 方向光
-    m_DirLight.ambient = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
-    m_DirLight.diffuse = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
-    m_DirLight.specular = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-    m_DirLight.direction = XMFLOAT3(-0.577f, -0.577f, 0.577f);
-    // 点光
-    m_PointLight.position = XMFLOAT3(0.0f, 0.0f, -10.0f);
-    m_PointLight.ambient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
-    m_PointLight.diffuse = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
-    m_PointLight.specular = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-    m_PointLight.attenuation = XMFLOAT3(0.0f, 0.1f, 0.0f);
-    m_PointLight.range = 25.0f;
-    // 聚光灯
-    m_SpotLight.position = XMFLOAT3(0.0f, 0.0f, -5.0f);
-    m_SpotLight.direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
-    m_SpotLight.ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-    m_SpotLight.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    m_SpotLight.specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    m_SpotLight.attenuation = XMFLOAT3(1.0f, 0.0f, 0.0f);
-    m_SpotLight.spot = 12.0f;
-    m_SpotLight.range = 10000.0f;
-    // 初始化用于VS的常量缓冲区的值
-    m_VSConstantBuffer.world = XMMatrixIdentity();			
-    m_VSConstantBuffer.view = XMMatrixTranspose(XMMatrixLookAtLH(
-        XMVectorSet(0.0f, 0.0f, -5.0f, 0.0f),
-        XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
-        XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
-    ));
-    m_VSConstantBuffer.proj = XMMatrixTranspose(XMMatrixPerspectiveFovLH(XM_PIDIV2, AspectRatio(), 1.0f, 1000.0f));
-    m_VSConstantBuffer.worldInvTranspose = XMMatrixIdentity();
+    // 初始化游戏对象
+    //
+    ComPtr<ID3D11ShaderResourceView> texture;
+    // 初始化木箱
+    HR(CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"..\\Texture\\WoodCrate.dds", nullptr, texture.GetAddressOf()));
+    m_WoodCrate.SetBuffer(m_pd3dDevice.Get(), Geometry::CreateBox());
+    m_WoodCrate.SetTexture(texture.Get());
     
-    // 初始化用于PS的常量缓冲区的值
-    m_PSConstantBuffer.material.ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-    m_PSConstantBuffer.material.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    m_PSConstantBuffer.material.specular = XMFLOAT4(0.5f, 0.5f, 0.5f, 5.0f);
-    // 使用默认平行光
-    m_PSConstantBuffer.dirLight = m_DirLight;
-    // 注意不要忘记设置此处的观察位置，否则高亮部分会有问题
-    m_PSConstantBuffer.eyePos = XMFLOAT4(0.0f, 0.0f, -5.0f, 0.0f);
-
-    // 更新PS常量缓冲区资源
-    D3D11_MAPPED_SUBRESOURCE mappedData;
-    HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[1].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
-    memcpy_s(mappedData.pData, sizeof(PSConstantBuffer), &m_PSConstantBuffer, sizeof(PSConstantBuffer));
-    m_pd3dImmediateContext->Unmap(m_pConstantBuffers[1].Get(), 0);
-
-    // ******************
-    // 初始化光栅化状态
-    //
-    D3D11_RASTERIZER_DESC rasterizerDesc;
-    ZeroMemory(&rasterizerDesc, sizeof(rasterizerDesc));
-    rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
-    rasterizerDesc.CullMode = D3D11_CULL_NONE;
-    rasterizerDesc.FrontCounterClockwise = false;
-    rasterizerDesc.DepthClipEnable = true;
-    HR(m_pd3dDevice->CreateRasterizerState(&rasterizerDesc, m_pRSWireframe.GetAddressOf()));
-
-    // ******************
-    // 给渲染管线各个阶段绑定好所需资源
-    //
-
-    // 设置图元类型，设定输入布局
-    m_pd3dImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pd3dImmediateContext->IASetInputLayout(m_pVertexLayout.Get());
-    // 将着色器绑定到渲染管线
-    m_pd3dImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-    // VS常量缓冲区对应HLSL寄存于b0的常量缓冲区
-    m_pd3dImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffers[0].GetAddressOf());
-    // PS常量缓冲区对应HLSL寄存于b1的常量缓冲区
-    m_pd3dImmediateContext->PSSetConstantBuffers(1, 1, m_pConstantBuffers[1].GetAddressOf());
-    m_pd3dImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
-
-    // ******************
-    // 设置调试对象名
-    //
-    D3D11SetDebugObjectName(m_pVertexLayout.Get(), "VertexPosNormalTexLayout");
-    D3D11SetDebugObjectName(m_pConstantBuffers[0].Get(), "VSConstantBuffer");
-    D3D11SetDebugObjectName(m_pConstantBuffers[1].Get(), "PSConstantBuffer");
-    D3D11SetDebugObjectName(m_pVertexShader.Get(), "Light_VS");
-    D3D11SetDebugObjectName(m_pPixelShader.Get(), "Light_PS");
-    */
-
-    // ******************
-    // 初始化纹理和采样器状态
-    // 初始化木箱纹理
-    HR(CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Texture\\WoodCrate.dds", nullptr, m_pWoodCrate.GetAddressOf()));
-    // 初始化火焰纹理
-    WCHAR strFile[40];
-    m_pFireAnims.resize(120);
-    for (int i = 1; i <= 120; ++i)
+    // 初始化地板
+    HR(CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"..\\Texture\\floor.dds", nullptr, texture.ReleaseAndGetAddressOf()));
+    m_Floor.SetBuffer(m_pd3dDevice.Get(),
+        Geometry::CreatePlane(XMFLOAT2(20.0f, 20.0f), XMFLOAT2(5.0f, 5.0f)));
+    m_Floor.SetTexture(texture.Get());
+    m_Floor.GetTransform().SetPosition(0.0f, -1.0f, 0.0f);
+    
+    
+    // 初始化墙体
+    m_Walls.resize(4);
+    HR(CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"..\\Texture\\brick.dds", nullptr, texture.ReleaseAndGetAddressOf()));
+    // 这里控制墙体四个面的生成
+    for (int i = 0; i < 4; ++i)
     {
-        wsprintf(strFile, L"..\\Texture\\FireAnim\\Fire%03d.bmp", i);
-        HR(CreateWICTextureFromFile(m_pd3dDevice.Get(), strFile, nullptr, m_pFireAnims[static_cast<size_t>(i) - 1].GetAddressOf()));
+        m_Walls[i].SetBuffer(m_pd3dDevice.Get(),
+            Geometry::CreatePlane(XMFLOAT2(20.0f, 8.0f), XMFLOAT2(5.0f, 1.5f)));
+        Transform& transform = m_Walls[i].GetTransform();
+        transform.SetRotation(-XM_PIDIV2, XM_PIDIV2 * i, 0.0f);
+        transform.SetPosition(i % 2 ? -10.0f * (i - 2) : 0.0f, 3.0f, i % 2 == 0 ? -10.0f * (i - 1) : 0.0f);
+        m_Walls[i].SetTexture(texture.Get());
     }
 
     // 初始化采样器状态
@@ -796,38 +447,47 @@ bool GameApp::InitResource()
 
     // ******************
     // 初始化常量缓冲区的值
-    // 初始化用于VS的常量缓冲区的值
-    m_VSConstantBuffer.world = XMMatrixIdentity();			
-    m_VSConstantBuffer.view = XMMatrixTranspose(XMMatrixLookAtLH(
-        XMVectorSet(0.0f, 0.0f, -5.0f, 0.0f),
-        XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
-        XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
-    ));
-    m_VSConstantBuffer.proj = XMMatrixTranspose(XMMatrixPerspectiveFovLH(XM_PIDIV2, AspectRatio(), 1.0f, 1000.0f));
-    m_VSConstantBuffer.worldInvTranspose = XMMatrixIdentity();
+    // 初始化每帧可能会变化的值
+    m_CameraMode = CameraMode::FirstPerson;
+    auto camera = std::make_shared<FirstPersonCamera>();
+    m_pCamera = camera;
+    camera->SetViewPort(0.0f, 0.0f, (float)m_ClientWidth, (float)m_ClientHeight);
+    camera->LookAt(XMFLOAT3(), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f));
 
-    // 初始化用于PS的常量缓冲区的值(这里使用一盏点光)
-    m_PSConstantBuffer.pointLight[0].position = XMFLOAT3(0.0f, 0.0f, -10.0f);
-    m_PSConstantBuffer.pointLight[0].ambient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
-    m_PSConstantBuffer.pointLight[0].diffuse = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
-    m_PSConstantBuffer.pointLight[0].specular = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-    m_PSConstantBuffer.pointLight[0].attenuation = XMFLOAT3(0.0f, 0.1f, 0.0f);
-    m_PSConstantBuffer.pointLight[0].range = 25.0f;
-    m_PSConstantBuffer.numDirLight = 0;
-    m_PSConstantBuffer.numPointLight = 1;
-    m_PSConstantBuffer.numSpotLight = 0;
+    // 初始化仅在窗口大小变动时修改的值
+    m_pCamera->SetFrustum(XM_PI / 3, AspectRatio(), 0.5f, 1000.0f);
+    m_CBOnResize.proj = XMMatrixTranspose(m_pCamera->GetProjXM());
+
+    // 初始化不会变化的值
+    // 直接光
+    m_CBRarely.dirLight[0].ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+    m_CBRarely.dirLight[0].diffuse = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+    m_CBRarely.dirLight[0].specular = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+    m_CBRarely.dirLight[0].direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
+    // 点光
+    m_CBRarely.pointLight[0].position = XMFLOAT3(0.0f, 10.0f, 0.0f);
+    m_CBRarely.pointLight[0].ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+    m_CBRarely.pointLight[0].diffuse = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+    m_CBRarely.pointLight[0].specular = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+    m_CBRarely.pointLight[0].attenuation = XMFLOAT3(0.0f, 0.1f, 0.0f);
+    m_CBRarely.pointLight[0].range = 25.0f;
+    m_CBRarely.numDirLight = 1;
+    m_CBRarely.numPointLight = 1;
+    m_CBRarely.numSpotLight = 0;
     // 初始化材质
-    m_PSConstantBuffer.material.ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-    m_PSConstantBuffer.material.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    m_PSConstantBuffer.material.specular = XMFLOAT4(0.1f, 0.1f, 0.1f, 5.0f);
-    // 注意不要忘记设置此处的观察位置，否则高亮部分会有问题
-    m_PSConstantBuffer.eyePos = XMFLOAT4(0.0f, 0.0f, -5.0f, 0.0f);
+    m_CBRarely.material.ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+    m_CBRarely.material.diffuse = XMFLOAT4(0.6f, 0.6f, 0.6f, 1.0f);
+    m_CBRarely.material.specular = XMFLOAT4(0.1f, 0.1f, 0.1f, 50.0f);
 
-    // 更新PS常量缓冲区资源
+    // 更新不容易被修改的常量缓冲区资源
     D3D11_MAPPED_SUBRESOURCE mappedData;
-    HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[1].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
-    memcpy_s(mappedData.pData, sizeof(PSConstantBuffer), &m_PSConstantBuffer, sizeof(PSConstantBuffer));
-    m_pd3dImmediateContext->Unmap(m_pConstantBuffers[1].Get(), 0);
+    HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[2].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+    memcpy_s(mappedData.pData, sizeof(CBChangesOnResize), &m_CBOnResize, sizeof(CBChangesOnResize));
+    m_pd3dImmediateContext->Unmap(m_pConstantBuffers[2].Get(), 0);
+
+    HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[3].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+    memcpy_s(mappedData.pData, sizeof(CBChangesRarely), &m_CBRarely, sizeof(CBChangesRarely));
+    m_pd3dImmediateContext->Unmap(m_pConstantBuffers[3].Get(), 0);
 
     // ******************
     // 给渲染管线各个阶段绑定好所需资源
@@ -836,129 +496,159 @@ bool GameApp::InitResource()
     m_pd3dImmediateContext->IASetInputLayout(m_pVertexLayout3D.Get());
     // 默认绑定3D着色器
     m_pd3dImmediateContext->VSSetShader(m_pVertexShader3D.Get(), nullptr, 0);
-    // VS常量缓冲区对应HLSL寄存于b0的常量缓冲区
+    // 预先绑定各自所需的缓冲区，其中每帧更新的缓冲区需要绑定到两个缓冲区上
     m_pd3dImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffers[0].GetAddressOf());
-    // PS常量缓冲区对应HLSL寄存于b1的常量缓冲区
+    m_pd3dImmediateContext->VSSetConstantBuffers(1, 1, m_pConstantBuffers[1].GetAddressOf());
+    m_pd3dImmediateContext->VSSetConstantBuffers(2, 1, m_pConstantBuffers[2].GetAddressOf());
+
     m_pd3dImmediateContext->PSSetConstantBuffers(1, 1, m_pConstantBuffers[1].GetAddressOf());
-    // 像素着色阶段设置好采样器
-    m_pd3dImmediateContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
-    m_pd3dImmediateContext->PSSetShaderResources(0, 1, m_pWoodCrate.GetAddressOf());
+    m_pd3dImmediateContext->PSSetConstantBuffers(3, 1, m_pConstantBuffers[3].GetAddressOf());
     m_pd3dImmediateContext->PSSetShader(m_pPixelShader3D.Get(), nullptr, 0);
+    m_pd3dImmediateContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
 
     // ******************
     // 设置调试对象名
     D3D11SetDebugObjectName(m_pVertexLayout2D.Get(), "VertexPosTexLayout");
     D3D11SetDebugObjectName(m_pVertexLayout3D.Get(), "VertexPosNormalTexLayout");
-    D3D11SetDebugObjectName(m_pConstantBuffers[0].Get(), "VSConstantBuffer");
-    D3D11SetDebugObjectName(m_pConstantBuffers[1].Get(), "PSConstantBuffer");
+    D3D11SetDebugObjectName(m_pConstantBuffers[0].Get(), "CBDrawing");
+    D3D11SetDebugObjectName(m_pConstantBuffers[1].Get(), "CBFrame");
+    D3D11SetDebugObjectName(m_pConstantBuffers[2].Get(), "CBOnResize");
+    D3D11SetDebugObjectName(m_pConstantBuffers[3].Get(), "CBRarely");
     D3D11SetDebugObjectName(m_pVertexShader2D.Get(), "Basic_2D_VS");
     D3D11SetDebugObjectName(m_pVertexShader3D.Get(), "Basic_3D_VS");
     D3D11SetDebugObjectName(m_pPixelShader2D.Get(), "Basic_2D_PS");
     D3D11SetDebugObjectName(m_pPixelShader3D.Get(), "Basic_3D_PS");
     D3D11SetDebugObjectName(m_pSamplerState.Get(), "SSLinearWrap");
+    m_Floor.SetDebugObjectName("Floor");
+    m_WoodCrate.SetDebugObjectName("WoodCrate");
+    m_Walls[0].SetDebugObjectName("Walls[0]");
+    m_Walls[1].SetDebugObjectName("Walls[1]");
+    m_Walls[2].SetDebugObjectName("Walls[2]");
+    m_Walls[3].SetDebugObjectName("Walls[3]");
 
     return true;
 }
 
-template<class VertexType>
-bool GameApp::ResetMesh(const Geometry::MeshData<VertexType>& meshData)
+GameApp::GameObject::GameObject()
+    : m_IndexCount(), m_VertexStride()
+{
+}
+
+Transform& GameApp::GameObject::GetTransform()
+{
+    return m_Transform;
+}
+
+const Transform& GameApp::GameObject::GetTransform() const
+{
+    return m_Transform;
+}
+
+template<class VertexType, class IndexType>
+void GameApp::GameObject::SetBuffer(ID3D11Device* device, const Geometry::MeshData<VertexType, IndexType>& meshData)
 {
     // 释放旧资源
     m_pVertexBuffer.Reset();
     m_pIndexBuffer.Reset();
 
+    // 检查网格数据是否有效
+    if (meshData.vertexVec.empty() || meshData.indexVec.empty())
+    {
+        // 如果网格数据为空，设置默认值并返回
+        m_IndexCount = 0;
+        m_VertexStride = 0;
+        return;
+    }
+
     // 设置顶点缓冲区描述
+    m_VertexStride = sizeof(VertexType);
     D3D11_BUFFER_DESC vbd;
-    ZeroMemory(&vbd, sizeof(vbd));
+    ZeroMemory(&vbd, sizeof(vbd));  // 完全初始化结构体
     vbd.Usage = D3D11_USAGE_IMMUTABLE;
-    vbd.ByteWidth = (UINT)meshData.vertexVec.size() * sizeof(VertexType);
+    vbd.ByteWidth = (UINT)(meshData.vertexVec.size() * m_VertexStride);
     vbd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     vbd.CPUAccessFlags = 0;
+    vbd.MiscFlags = 0;
+    vbd.StructureByteStride = 0;
+    
     // 新建顶点缓冲区
     D3D11_SUBRESOURCE_DATA InitData;
     ZeroMemory(&InitData, sizeof(InitData));
     InitData.pSysMem = meshData.vertexVec.data();
-    HR(m_pd3dDevice->CreateBuffer(&vbd, &InitData, m_pVertexBuffer.ReleaseAndGetAddressOf()));
-
-    // 输入装配阶段的顶点缓冲区设置
-    UINT stride = sizeof(VertexType);			// 跨越字节数
-    UINT offset = 0;							// 起始偏移量
-
-    m_pd3dImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
-
-
+    InitData.SysMemPitch = 0;
+    InitData.SysMemSlicePitch = 0;
+    HR(device->CreateBuffer(&vbd, &InitData, m_pVertexBuffer.GetAddressOf()));
 
     // 设置索引缓冲区描述
     m_IndexCount = (UINT)meshData.indexVec.size();
     D3D11_BUFFER_DESC ibd;
-    ZeroMemory(&ibd, sizeof(ibd));
+    ZeroMemory(&ibd, sizeof(ibd));  // 完全初始化结构体
     ibd.Usage = D3D11_USAGE_IMMUTABLE;
-    ibd.ByteWidth = sizeof(DWORD) * m_IndexCount;
+    ibd.ByteWidth = m_IndexCount * sizeof(IndexType);
     ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     ibd.CPUAccessFlags = 0;
+    ibd.MiscFlags = 0;
+    ibd.StructureByteStride = 0;
+    
     // 新建索引缓冲区
     InitData.pSysMem = meshData.indexVec.data();
-    HR(m_pd3dDevice->CreateBuffer(&ibd, &InitData, m_pIndexBuffer.ReleaseAndGetAddressOf()));
-    // 输入装配阶段的索引缓冲区设置
-    m_pd3dImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-
-
-    // 设置调试对象名
-    D3D11SetDebugObjectName(m_pVertexBuffer.Get(), "VertexBuffer");
-    D3D11SetDebugObjectName(m_pIndexBuffer.Get(), "IndexBuffer");
-
-    return true;
+    HR(device->CreateBuffer(&ibd, &InitData, m_pIndexBuffer.GetAddressOf()));
 }
 
-/*
-bool GameApp::ResetMesh(const Geometry::MeshData<VertexPosNormalColor>& meshData)
+void GameApp::GameObject::SetTexture(ID3D11ShaderResourceView * texture)
 {
-    // 释放旧资源
-    m_pVertexBuffer.Reset();
-    m_pIndexBuffer.Reset();
-
-    // 设置顶点缓冲区描述
-    D3D11_BUFFER_DESC vbd;
-    ZeroMemory(&vbd, sizeof(vbd));
-    vbd.Usage = D3D11_USAGE_IMMUTABLE;
-    vbd.ByteWidth = (UINT)meshData.vertexVec.size() * sizeof(VertexPosNormalColor);
-    vbd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    vbd.CPUAccessFlags = 0;
-    // 新建顶点缓冲区
-    D3D11_SUBRESOURCE_DATA InitData;
-    ZeroMemory(&InitData, sizeof(InitData));
-    InitData.pSysMem = meshData.vertexVec.data();
-    HR(m_pd3dDevice->CreateBuffer(&vbd, &InitData, m_pVertexBuffer.GetAddressOf()));
-
-    // 输入装配阶段的顶点缓冲区设置
-    UINT stride = sizeof(VertexPosNormalColor);	// 跨越字节数
-    UINT offset = 0;							// 起始偏移量
-
-    m_pd3dImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
-
-
-
-    // 设置索引缓冲区描述
-    m_IndexCount = (UINT)meshData.indexVec.size();
-    D3D11_BUFFER_DESC ibd;
-    ZeroMemory(&ibd, sizeof(ibd));
-    ibd.Usage = D3D11_USAGE_IMMUTABLE;
-    ibd.ByteWidth = m_IndexCount * sizeof(DWORD);
-    ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    ibd.CPUAccessFlags = 0;
-    // 新建索引缓冲区
-    InitData.pSysMem = meshData.indexVec.data();
-    HR(m_pd3dDevice->CreateBuffer(&ibd, &InitData, m_pIndexBuffer.GetAddressOf()));
-    // 输入装配阶段的索引缓冲区设置
-    m_pd3dImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-
-
-    // 设置调试对象名
-    D3D11SetDebugObjectName(m_pVertexBuffer.Get(), "VertexBuffer");
-    D3D11SetDebugObjectName(m_pIndexBuffer.Get(), "IndexBuffer");
-
-    return true;
+    m_pTexture = texture;
 }
-*/
+
+void GameApp::GameObject::Draw(ID3D11DeviceContext * deviceContext)
+{
+    // 检查缓冲区是否有效
+    if (!m_pVertexBuffer || !m_pIndexBuffer || m_IndexCount == 0)
+        return;
+
+    // 设置顶点/索引缓冲区
+    UINT strides = m_VertexStride;
+    UINT offsets = 0;
+    deviceContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &strides, &offsets);
+    deviceContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+    // 获取之前已经绑定到渲染管线上的常量缓冲区并进行修改
+    ComPtr<ID3D11Buffer> cBuffer = nullptr;
+    deviceContext->VSGetConstantBuffers(0, 1, cBuffer.GetAddressOf());
+    
+    // 检查常量缓冲区是否有效
+    if (!cBuffer)
+        return;
+
+    CBChangesEveryDrawing cbDrawing;
+
+    // 内部进行转置
+    XMMATRIX W = m_Transform.GetLocalToWorldMatrixXM();
+    cbDrawing.world = XMMatrixTranspose(W);
+    cbDrawing.worldInvTranspose = XMMatrixTranspose(InverseTranspose(W));
+
+    // 更新常量缓冲区
+    D3D11_MAPPED_SUBRESOURCE mappedData;
+    HR(deviceContext->Map(cBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+    memcpy_s(mappedData.pData, sizeof(CBChangesEveryDrawing), &cbDrawing, sizeof(CBChangesEveryDrawing));
+    deviceContext->Unmap(cBuffer.Get(), 0);
+
+    // 设置纹理（如果存在）
+    if (m_pTexture)
+    {
+        deviceContext->PSSetShaderResources(0, 1, m_pTexture.GetAddressOf());
+    }
+
+    // 可以开始绘制
+    deviceContext->DrawIndexed(m_IndexCount, 0, 0);    
+}
+
+void GameApp::GameObject::SetDebugObjectName(const std::string& name)
+{
+#if (defined(DEBUG) || defined(_DEBUG)) && (GRAPHICS_DEBUGGER_OBJECT_NAME)
+    D3D11SetDebugObjectName(m_pVertexBuffer.Get(), name + ".VertexBuffer");
+    D3D11SetDebugObjectName(m_pIndexBuffer.Get(), name + ".IndexBuffer");
+#else
+    UNREFERENCED_PARAMETER(name);
+#endif
+}

@@ -1,0 +1,13 @@
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\GameApp.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\GameApp.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Main.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\Main.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Inputs\Keyboard.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\Keyboard.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Inputs\Mouse.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\Mouse.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Common\Camera.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\Camera.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Common\CpuTimer.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\CpuTimer.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Common\DDSTextureLoader11.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\DDSTextureLoader11.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Common\DXTrace.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\DXTrace.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Common\Transform.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\Transform.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Common\Vertex.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\Vertex.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Common\WICTextureLoader11.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\WICTextureLoader11.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Common\d3dApp.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\d3dApp.obj
+Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\Common\d3dUtil.cpp;Z:\Developments\DirectX11\DirectX11_Yoshily9_VSC\build\DirectX11_Test.dir\Release\d3dUtil.obj

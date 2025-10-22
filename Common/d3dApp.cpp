@@ -65,6 +65,7 @@ D3DApp::~D3DApp()
     // 恢复所有默认设定
     if (m_pd3dImmediateContext)
         m_pd3dImmediateContext->ClearState();
+
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
@@ -126,19 +127,8 @@ int D3DApp::Run()
 
 bool D3DApp::Init()
 {
-    //Initalize Mouse and Keyboard
-    /*
-    m_pMouse = std::make_unique<DirectX::Mouse>();
-    m_pKeyboard = std::make_unique<DirectX::Keyboard>();
-    */
-
     if (!InitMainWindow())
         return false;
-
-    /*
-    if (!InitDirect2D())
-        return false;
-    */
 
     if (!InitDirect3D())
         return false;
@@ -342,40 +332,7 @@ LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         ((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
         return 0;
     }
-    // 监测这些键盘/鼠标事件
-    /*
-    case WM_INPUT:
-
-    case WM_LBUTTONDOWN:
-    case WM_MBUTTONDOWN:
-    case WM_RBUTTONDOWN:
-    case WM_XBUTTONDOWN:
-
-    case WM_LBUTTONUP:
-    case WM_MBUTTONUP:
-    case WM_RBUTTONUP:
-    case WM_XBUTTONUP:
-
-    case WM_MOUSEWHEEL:
-    case WM_MOUSEHOVER:
-    case WM_MOUSEMOVE:
-        m_pMouse->ProcessMessage(msg, wParam, lParam);
-        return 0;
-
-    case WM_KEYDOWN:
-    case WM_SYSKEYDOWN:
-    case WM_KEYUP:
-    case WM_SYSKEYUP:
-        m_pKeyboard->ProcessMessage(msg, wParam, lParam);
-        return 0;
-
-    case WM_ACTIVATEAPP:
-        m_pMouse->ProcessMessage(msg, wParam, lParam);
-        m_pKeyboard->ProcessMessage(msg, wParam, lParam);
-        return 0;
-    }
-    */
-
+  
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
@@ -400,6 +357,10 @@ bool D3DApp::InitMainWindow()
         return false;
     }
 
+    // 将窗口调整到中心
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
     // Compute window rectangle dimensions based on requested client area dimensions.
     RECT R = { 0, 0, m_ClientWidth, m_ClientHeight };
     AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
@@ -407,7 +368,8 @@ bool D3DApp::InitMainWindow()
     int height = R.bottom - R.top;
 
     m_hMainWnd = CreateWindow(L"D3DWndClassName", m_MainWndCaption.c_str(),
-        WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, m_hAppInst, 0);
+        WS_OVERLAPPEDWINDOW, (screenWidth - width) / 2, (screenHeight - height) / 2, width, height, 0, 0, m_hAppInst, 0);
+
     if (!m_hMainWnd)
     {
         MessageBox(0, L"CreateWindow Failed.", 0, 0);
@@ -420,25 +382,15 @@ bool D3DApp::InitMainWindow()
     return true;
 }
 
-// D2D初始化
-/*
-bool D3DApp::InitDirect2D()
-{
-    //D2D1 Initalize, Create Factory
-    HR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, m_pd2dFactory.GetAddressOf()));
-    HR(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
-        reinterpret_cast<IUnknown**>(m_pdwriteFactory.GetAddressOf())));
-
-    return true;
-}
-*/
-
 bool D3DApp::InitDirect3D()
 {
     HRESULT hr = S_OK;
 
     // 创建D3D设备 和 D3D设备上下文
-    UINT createDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;	// Direct2D需要支持BGRA格式
+    UINT createDeviceFlags = 0;
+#ifndef USE_IMGUI
+    createDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;	// Direct2D需要支持BGRA格式
+#endif
 #if defined(DEBUG) || defined(_DEBUG)  
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
@@ -526,9 +478,13 @@ bool D3DApp::InitDirect3D()
         ZeroMemory(&sd, sizeof(sd));//清零
         sd.Width = m_ClientWidth;//长
         sd.Height = m_ClientHeight;//宽
-        sd.Format = DXGI_FORMAT_B8G8R8A8_UNORM;//交换链中缓冲区的格式
-
-        if (m_Enable4xMsaa)       // 是否开启4倍多重采样？
+#ifdef USE_IMGUI
+        sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;//交换链中缓冲区的格式
+#else
+        sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;//交换链中缓冲区的格式
+#endif
+        // 是否开启4倍多重采样？
+        if (m_Enable4xMsaa)      
         {
             sd.SampleDesc.Count = 4;
             sd.SampleDesc.Quality = m_4xMsaaQuality - 1;
@@ -563,7 +519,11 @@ bool D3DApp::InitDirect3D()
         sd.BufferDesc.Height = m_ClientHeight;
         sd.BufferDesc.RefreshRate.Numerator = 60;
         sd.BufferDesc.RefreshRate.Denominator = 1;
-        sd.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+#ifdef USE_IMGUI
+        sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+#else
+        sd.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;		// 注意此处DXGI_FORMAT_B8G8R8A8_UNORM
+#endif
         sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
         sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
         // 是否开启4倍多重采样？
@@ -585,8 +545,6 @@ bool D3DApp::InitDirect3D()
         sd.Flags = 0;
         HR(dxgiFactory1->CreateSwapChain(m_pd3dDevice.Get(), &sd, m_pSwapChain.GetAddressOf()));
     }
-
-    
 
     // 可以禁止alt+enter全屏
     dxgiFactory1->MakeWindowAssociation(m_hMainWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);

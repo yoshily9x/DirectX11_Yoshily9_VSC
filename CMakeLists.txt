@@ -29,21 +29,26 @@ add_compile_definitions(UNICODE _UNICODE)
 if (${WIN7_SYSTEM})
     add_compile_definitions(_WIN32_WINNT=0x601)
 endif()
+
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+
 file(COPY ${HLSL_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(GLOB_RECURSE HLSL_FILES ${HLSL_DIR}/*.hlsl)
 file(GLOB HEADER_FILES ./*.h)
+file(GLOB COMMON_FILES ../Common/*)
 
 aux_source_directory(. DIR_SRCS)
 aux_source_directory(Inputs INPUTS_SRCS)
+aux_source_directory(Common COMMON_SRCS)
 
 # 添加纹理加载器源文件
 set(TEXTURE_LOADER_SRCS 
-    DDSTextureLoader11.cpp
-    WICTextureLoader11.cpp
+    Common/DDSTextureLoader11.cpp
+    Common/WICTextureLoader11.cpp
 )
 
-add_executable(${TARGET_NAME} WIN32 ${DIR_SRCS} ${INPUTS_SRCS} ${TEXTURE_LOADER_SRCS} ${HEADER_FILES})
+add_executable(${TARGET_NAME} WIN32 ${DIR_SRCS} ${INPUTS_SRCS} ${COMMON_SRCS} ${TEXTURE_LOADER_SRCS} ${HEADER_FILES})
+target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Common)
 target_link_libraries(${TARGET_NAME} d3d11.lib dxgi.lib dxguid.lib D3DCompiler.lib winmm.lib d2d1.lib dwrite.lib)
 source_group("HLSL Files" FILES ${HLSL_FILES})
 file(COPY ${HLSL_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -51,6 +56,8 @@ file(COPY ${HLSL_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME ${TARGET_NAME})
 set_target_properties(${TARGET_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(${TARGET_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR})
+# 设置工作目录为项目根目录，这样程序运行时能找到Texture文件夹
+set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (${SHADER_STATIC_COMPILE})
     target_sources(${TARGET_NAME} PRIVATE ${HLSL_FILES})
@@ -64,6 +71,7 @@ if (${SHADER_STATIC_COMPILE})
         math(EXPR LEN_FNAME_WE "${LEN_FNAME_WE}-2")
         string(SUBSTRING ${HLSL_FBASENAME_WE} ${LEN_FNAME_WE} 2 ENTRY_POINT)
         string(TOLOWER ${ENTRY_POINT} SHADER_TYPE)
+
         if ("${SHADER_TYPE}" STREQUAL "vs") 
             set(SHADER_TYPE "Vertex")
         elseif("${SHADER_TYPE}" STREQUAL "hs") 
